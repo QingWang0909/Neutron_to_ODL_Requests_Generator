@@ -1,0 +1,52 @@
+Traceback Steps to interact w/ ODL
+---------------------------------
+1 ) mechnism_managers.process_create_subnet  
+2 ) plugin._create_subnet_db
+3 ) mechanism_manager.create_subnet_precommit
+4 ) mechanism_manager.create_subnet_postcommit
+5 ) OpenDaylight driver.create_subnet_postcommit
+    self.odl_drv.synchronize('create', odl_const.ODL_SUBNETS, context)    // ODL log file will be appended after this line
+ 
+
+
+Data Information
+---------------
+Orig_Valid_Obj
+{'subnet': [{'ipv6_ra_mode': None, 'allocation_pools': [{'start': u'10.10.2.2', 'end': u'10.10.2.254'}], 'host_routes': [], 'ipv6_address_mode': None, 'cidr': u'10.10.2.0/24', 'id': u'7dc699ca-f705-4f40-ab22-1833d028e050', 'subnetpool_id': None, 'name': u'subnet2', 'enable_dhcp': True, 'network_id': u'f7db6cc2-ba08-47ba-8c3e-330546cd1161', 'tenant_id': u'487827ffd19f4da99339ec1337bfc06c', 'dns_nameservers': [], 'gateway_ip': u'10.10.2.1', 'ip_version': 4L, 'shared': False}]}
+
+
+FAKE_OBJ1 = {
+               'subnet':[
+                  {
+                     'ipv6_ra_mode':None,
+                     'allocation_pools':[
+                        {
+                           'start':u'10.0.2.2',
+                           'end':u'10.0.2.254'
+                        }
+                     ],
+                     'host_routes':[
+
+                     ],
+                     'ipv6_address_mode':None,
+                     'cidr':u'10.0.2.0/24',
+                     'id':u'7dc699ca-f705-4f40-ab22-1833d028e058',
+                     'subnetpool_id':None,
+                     'name':u'subnet3',
+                     'enable_dhcp':True,
+                     'network_id':u'f7db6cc2-ba08-47ba-8c3e-330546cd1161',
+                     'tenant_id':u'487827ffd19f4da99339ec1337bfc06c',
+                     'dns_nameservers':[
+
+                     ],
+                     'gateway_ip':u'10.0.2.1',
+                     'ip_version':4L,
+                     'shared':False
+                  }
+               ]
+            }
+
+
+Note :
+1 ) Subnet UUID can not exsits
+2 ) Network ID need exsits
