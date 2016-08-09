@@ -51,7 +51,7 @@ class RestEmulator():
         urlpath = 'subnets/' + uuid
         self.client.sendjson(method, urlpath, None)
 
-    def update_one_subnet(self, uuid, new_fake_obj):     ### Attribute edit blocked by Neutron ?
+    def update_one_subnet(self, uuid, new_fake_obj):     ###TODO: Attribute edit blocked by Neutron ?
         method = 'put'
         urlpath = 'subnets/' + uuid
         self.client.sendjson(method, urlpath, new_fake_obj)

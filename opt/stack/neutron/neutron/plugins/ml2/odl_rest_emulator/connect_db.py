@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 
+#TODO: Create close_connect_db.py
 def connect():
     """ Connect to MySQL database """
 
