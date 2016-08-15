@@ -9,14 +9,16 @@ import timeit
 import uuid
 import binascii
 
+
 class EmulatorManager():
     def __init__(self):
         self.emulator = RestEmulator()
         try:
             self.conn = connect()
-            self.cursor = self.conn.cursor()
+            self.cursor = self.conn.cursor(buffered=True)
         except Error as e:
             print (e)
+
 
     def __get_uuid1(self):
         return uuid.uuid1()
@@ -51,19 +53,22 @@ class EmulatorManager():
             i.join()
 
 
-
-    # List All Networks
-    def list_all_networks_db(self):
+    def dump_table_db(self, table):
         try:
-            mysql = """SELECT * FROM networks"""
+            mysql = """SELECT * FROM """ + table
 
             self.cursor.execute(mysql)
 
             rows = self.cursor.fetchall()
 
-            print('Total Network Numbers: ', self.cursor.rowcount)
+            print('Total ' + table + ' number: ' + str(self.cursor.rowcount))
             for i, row in enumerate(rows):
-                print "Network ", i + 1, " UUID: ", uuid.UUID(row[2])
+                if( table == 'networks' ):
+                    print "Network ", i + 1, " UUID: ", uuid.UUID(row[2])
+                elif(table == 'subnets'):
+                    print "Subnet ", i + 1, " UUID: ", uuid.UUID(row[4])
+                elif(table == 'ports'):
+                    pass
 
         except Error as e:
             print (e)
@@ -164,48 +169,55 @@ class EmulatorManager():
         except Error as e:
             print(e)
 
+
     # TODO: in CLI, list all subnets
-    # TODO: check UUID, and check if exists in DB
-    def check_network_uuid(self, input_s):
+    # Test if an UUID exists in Database table
+    def validate_uuid(self, table, target_id, uuid_s):
 
-        # Test input_s UUID Validation & if UUID exists in Database
         try:
-            uuid_obj = uuid.UUID(input_s)
+            mysql = "SELECT * FROM " + table + " WHERE " + target_id + " = %s"
 
-            mysql = "select * from networks where network_id = %s"
-            args = (input_s,)
+            args = (uuid_s, )
 
             self.cursor.execute(mysql, args)
-            self.conn.commit()
 
-        except ValueError as e:
-            print (e)
-            return False
+            return True
 
         except Error as e:
             print (e)
             return False
 
+
     # Delete All Resources
-    def delete_all_resource(self):
-        self.__delete_all_ports_db()
-        self.__delete_all_subnets_db()
-        self.__delete_all_networks_db()
+    def delete_all_resource(self, flag):
+        if(flag == "ALL"):
+            self.__delete_all_ports_db()
+            self.__delete_all_subnets_db()
+            self.__delete_all_networks_db()
+
+        elif(flag == "NETWORK"):
+            self.__delete_all_networks_db()
+
+        elif(flag == "SUBNET"):
+            self.__delete_all_subnets_db()
+
+        elif(flag == "PORT"):
+            pass
 
 
     # Generate Subnet by one network UUID
-    def createSubnets(self, concurrent_subnet, network_uuid_string):
+    def createSubnets(self, concurrent_subnet, network_uuid_s):
         for i in range(concurrent_subnet):
             obj = Fake_Obj_Const.Subnet
 
-            obj['subnet'][0]['network_id'] = network_uuid_string
+            obj['subnet'][0]['network_id'] = network_uuid_s
             obj['subnet'][0]['id'] = self.__uuid_hex_to_string(self.__get_uuid4().hex)
 
             # fetch tenant_id based on network_id
             try:
                 mysql = """select * from networks where network_id = %s"""
 
-                args = (network_uuid_string, )
+                args = (network_uuid_s, )
 
                 self.cursor.execute(mysql, args)
 
@@ -236,17 +248,32 @@ class EmulatorManager():
 
 
     # Delete One Network
-    def delete_One_Network(self, uuid):
-        self.emulator.del_network(uuid)
+    def delete_One_Network(self, network_uuid):
+        try:
+            mysql = """DELETE FROM networks WHERE network_id = %s"""
+            args = (network_uuid, )
+            self.cursor.execute(mysql, args)
+            self.conn.commit()
+
+            # Send Request to ODL
+            self.emulator.del_network(network_uuid)
+
+        except Error as e:
+            print (e)
 
     # Delete One Subnet
-    def delete_one_Subnet(self, uuid):
-        self.emulator.del_subnet(uuid)
+    def delete_one_Subnet(self, subnet_uuid):
+        try:
+            mysql = """DELETE FROM subnets WHERE subnet_id = %s"""
+            args = (subnet_uuid, )
+            self.cursor.execute(mysql, args)
+            self.conn.commit()
 
+            # Send Request to ODL
+            self.emulator.del_subnet(subnet_uuid)
 
-concurrent_num = 200
-thread_pool = []
-manager = EmulatorManager()
+        except Error as e:
+            print (e)
 
 
 def quit():
@@ -254,7 +281,7 @@ def quit():
     exit(1)
 
 
-def del_all():
+def del_all(flag):
     while True:
         print ("\nThis operation will delete all the resoureces allocated, are you sure? (Y/N) ")
         print ("[0]: No")
@@ -266,17 +293,17 @@ def del_all():
                 return
 
             elif(choice == '1'):
-                print "delate resoureces!!"
-                manager.delete_all_resource()
+                print "delete " + flag + " resoureces!!"
+                manager.delete_all_resource(flag)
                 return
-
 
         except(KeyError):
             print "Your input is not an integer, please enter an integer"
 
 
-def list():
-    manager.list_all_networks_db()
+# TODO: Change to python curl send API to neutron to get all information directly
+def list_network():
+    manager.dump_table_db('networks')
 
 
 def check_int(input_s):
@@ -284,26 +311,38 @@ def check_int(input_s):
         int(input_s)
 
     except ValueError:
-        print ("Your input is not an integer, please enter an interger")
+        print ("  >> Your input is *NOT* an integer, please enter an interger")
         return False
-
 
     if (int(input_s) > 0 and int(input_s) <= 2500):
         return True
     else:
-        print ("Your input is not in a valid range, please enter an valid interger")
+        print ("  >> Your input is *NOT* in a valid range, please enter an valid interger!!")
         return False
 
 
+def check_uuid(input_s):
+    try:
+        uuid_obj = uuid.UUID(input_s)
+
+    except:
+        print ("  >> Your input is *NOT* an UUID, please enter an UUID")
+        return False
 
 
-def create_subnet():
+    return True
+
+
+def subnet():
     while True:
         print ("\n\nSUBNET Menu")
         print (">>How do you want to simulate create_subnet rest requests ?")
         print (">[0]: Quit Program")
         print (">[1]: List all existing network UUID")
-        print (">[2]: Simulate multiple create_subnet rest requests under one network UUID")
+        print (">[2]: List all existing subnet UUID")
+        print (">[3]: Create subnets via network UUID")
+        print (">[4]: Delete one subnet via subnet UUID")
+        print (">[5]: Delete all subnet")
         print (">[9]: Back to Upper Menu")
 
 
@@ -313,16 +352,31 @@ def create_subnet():
                 quit()
 
             elif (choice == '1'):
-                manager.list_all_networks_db()
+                manager.dump_table_db('networks')
 
             elif (choice == '2'):
-                uuid_input = raw_input("Please enter the selected Network UUID number: ") # use database to reteive maybe
-                num_input = raw_input("Please enter the subnet number you want to create: ")
+                manager.dump_table_db('subnets')
 
-                # if ( check_int(num_input) and check_network_uuid(uuid_input) ):
-                if (check_int(num_input) ):
-                    print 'create subnets!!'
-                    manager.createSubnets(int(num_input), uuid_input)
+            elif (choice == '3'):
+                network_uuid = raw_input("Please enter the selected Network UUID number: ")
+                if ( check_uuid(network_uuid) ):
+                    num_input = raw_input("Please enter the subnet number you want to create: ")
+                    if( check_int(num_input) ):
+                        if ( manager.validate_uuid('networks', 'network_id', network_uuid) ):
+                            print 'create subnets!!'
+                            manager.createSubnets(int(num_input), network_uuid)
+                        else:
+                            print 'UUID not exists'
+
+            elif (choice == '4'):
+                subnet_uuid = raw_input("Please enter the selected Subnet UUID number: ")
+                if( check_uuid(subnet_uuid) ):
+                    print 'delete this subnet!!'
+                    manager.delete_one_Subnet(subnet_uuid)
+
+            elif (choice == '5'):
+                print 'delete all subnets!!'
+                del_all("SUBNET")
 
             elif (choice == '9'):
                 return
@@ -331,13 +385,15 @@ def create_subnet():
             print "Choice Invalid"
 
 
-def create():
+def network():
     while True:
         print ("\n\nNETWORK Menu")
         print (">>How do you want to simulate create_network rest requests ?")
         print (">[0]: Quit Program")
         print (">[1]: List all existing network UUID")
         print (">[2]: Simulate create_network request by multiple Client:")
+        print (">[4]: Delete one network via network UUID")
+        print (">[5]: Delete all networks")
         print (">[9]: Back to Upper Menu")
 
         try:
@@ -346,7 +402,7 @@ def create():
                 quit()
 
             elif (choice == '1'):
-                manager.list_all_networks_db()
+                manager.dump_table_db('networks')
 
             elif( choice == '2' ):
                 data = raw_input("Please enter the client number ( 1 ~ 2500 ): ")
@@ -354,6 +410,15 @@ def create():
                 if ( check_int(data) ):
                     print 'create networks!!'
                     manager.createNetworks(int(data))
+
+            elif(choice == '4'):
+                network_uuid = raw_input("Please enter the selected Network UUID number: ")
+                if (check_uuid(network_uuid)):
+                    print 'delete this network!!'
+                    manager.delete_One_Network(network_uuid)
+
+            elif(choice == '5'):
+                del_all("NETWORK")
 
             elif( choice == '9' ):
                 return
@@ -363,25 +428,32 @@ def create():
 
 
 
+concurrent_num = 200
+thread_pool = []
+manager = EmulatorManager()
+
 def main():
     while True:
         print ("\n\nODL_Emulator Setting Menu")
         print (">[0]: Quit Program")
         print (">[1]: List All Network UUIDs")
-        print (">[2]: Create Networks")
-        print (">[3]: Create Subnets")
+        print (">[2]: Network Menu")
+        print (">[3]: Subnet Menu")
         print (">[5]: Delete All Resourece")
 
 
         odl_menu_dict = { '0' : quit,
-                          '1' : list,
-                          '2' : create,
-                          '3' : create_subnet,
+                          '1' : list_network,
+                          '2' : network,
+                          '3' : subnet,
                           '5' : del_all
                         }
         try:
             choice = raw_input("Please select a number ( 0 ~ 9 ) >> ")
-            odl_menu_dict[choice]()
+            if(choice == '5'):
+                odl_menu_dict[choice]("ALL")
+            else:
+                odl_menu_dict[choice]()
 
         except(KeyError):
             print "Choice Invalid!"
