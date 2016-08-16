@@ -15,7 +15,7 @@ class MockObjects:
 
                 ],
                 'ipv6_address_mode': None,
-                'cidr': u'10.0.20.0/24',
+                'cidr': u'10.0.2.0/24',
                 'id': u'7dc699ca-f705-4f40-ab22-1833d028e211',
                 'subnetpool_id': None,
                 'name': u'subnet3',
@@ -70,13 +70,13 @@ class MockObjects:
             "extra_dhcp_opts": [],
             "fixed_ips": [
                 {
-                    "ip_address": "10.0.2.2",
+                    "ip_address": "10.0.2.5",
                     "subnet_id": "e1607dfd-f71e-45e5-a1d4-045f49d17fed"
                 }
             ],
             "id": "e01b15fe-e1db-46aa-9c77-9bdc87b917fk",
             "mac_address": "FA:16:3E:E9:1C:36",
-            "name": "",
+            "name": "myport3333",
             "network_id": "0459d012-9a2c-4814-b5e0-1852c8f98bf4",
             "security_groups": [],
             "tenant_id": "51cc435ba80242378ae46d8eab930190"

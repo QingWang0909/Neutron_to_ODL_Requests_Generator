@@ -1,7 +1,8 @@
-from networking_odl.common.client import  OpenDaylightRestClient
+# from networking_odl.common.client import  OpenDaylightRestClient
 from time import sleep
-
+from odl_client import ODLClient
 # Wrapper class for Neutron Northbound APIs
+
 
 class RestEmulator():
 
@@ -10,7 +11,15 @@ class RestEmulator():
         self.username = 'admin'
         self.password = 'admin'
         self.timeout = 10
-        self.client = OpenDaylightRestClient(self.url, self.username, self.password, self.timeout)
+        self.debug = False
+        # self.client = OpenDaylightRestClient(self.url, self.username, self.password, self.timeout)
+        self.client = ODLClient(self.url, self.username, self.password, self.timeout)
+
+    def set_debug(self, flag):
+        if(flag == True):
+            self.client.set_debug_level(True)
+        else:
+            self.client.set_debug_level(False)
 
     # Neutron Network Northbound APIs
     def list_networks(self):
@@ -79,7 +88,7 @@ class RestEmulator():
         urlpath = 'ports'
         self.client.sendjson(method, urlpath, fake_obj)
 
-    def delete_port(self, uuid):
+    def del_port(self, uuid):
         method = 'delete'
         urlpath = 'ports/' + uuid
         self.client.sendjson(method, urlpath, None)
@@ -125,7 +134,7 @@ class RestEmulator():
         urlpath = 'security-group-rules'
         self.client.sendjson(method, urlpath, fake_obj)
 
-    def delete_security_grouprules(self, uuid):
+    def del_security_grouprules(self, uuid):
         method = 'delete'
         urlpath = 'security-group-rules/' + uuid
         self.client.sendjson(method, urlpath, None)
@@ -148,7 +157,7 @@ class RestEmulator():
         urlpath = 'floatingips'
         self.client.sendjson(method, urlpath, fake_obj)
 
-    def delete_floatingips(self, uuid):
+    def del_floatingips(self, uuid):
         method = 'delete'
         urlpath = 'floatingips/' + uuid
         self.client.sendjson(method, urlpath, None)
