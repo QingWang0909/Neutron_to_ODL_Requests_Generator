@@ -272,16 +272,18 @@ class EmulatorManager():
 
         try:
             mysql = "SELECT * FROM " + table + " WHERE " + target_id + " = %s"
-
             args = (uuid_s, )
-
             self.cursor.execute(mysql, args)
 
-            return True
+            row = self.cursor.fetchall()
+
+            if(self.cursor.rowcount == 0):
+                return False
+            else:
+                return True
 
         except Error as e:
             print (e)
-            return False
 
 
     # Delete All Resources
@@ -477,13 +479,13 @@ def check_int(input_s):
         int(input_s)
 
     except ValueError:
-        print ("  >>> Your input is *NOT* an integer, please enter an interger")
+        print (">>> Your input is *NOT* an integer, please enter an interger")
         return False
 
     if (int(input_s) > 0 and int(input_s) <= 2500):
         return True
     else:
-        print ("  >>> Your input is *NOT* in a valid range, please enter an valid interger!!")
+        print (">>> Your input is *NOT* in a valid range, please enter an valid interger!!")
         return False
 
 
@@ -492,9 +494,8 @@ def check_uuid(input_s):
         uuid_obj = uuid.UUID(input_s)
 
     except:
-        print ("  >>> Your input is *NOT* an UUID, please enter an UUID")
+        print (">>> Your input is *NOT* an UUID, please enter an UUID")
         return False
-
 
     return True
 
@@ -539,8 +540,11 @@ def port():
             elif(choice == '4'):
                 port_uuid = raw_input('Please enter port UUID number:')
                 if (check_uuid(port_uuid)):
-                    print ">>> delete this port!!"
-                    manager.delete_one_Port(port_uuid)
+                    if(manager.validate_uuid('ports', 'port_id', port_uuid) ):
+                        print ">>> delete this port!!"
+                        manager.delete_one_Port(port_uuid)
+                    else:
+                        print '>>> UUID not exists'
 
             elif (choice == '5'):
                 del_all("PORT")
@@ -601,9 +605,12 @@ def subnet():
 
             elif (choice == '4'):
                 subnet_uuid = raw_input("Please enter Subnet UUID number: ")
-                if( check_uuid(subnet_uuid) ):
-                    print '>>> delete this subnet!!'
-                    manager.delete_one_Subnet(subnet_uuid)
+                if( check_uuid(subnet_uuid)):
+                    if(manager.validate_uuid('subnets', 'subnet_id', subnet_uuid)):
+                        print '>>> delete this subnet!!'
+                        manager.delete_one_Subnet(subnet_uuid)
+                    else:
+                        print '>>> UUID not exists'
 
             elif (choice == '5'):
                 del_all("SUBNET")
@@ -656,8 +663,11 @@ def network():
             elif(choice == '4'):
                 network_uuid = raw_input("Please enter Network UUID number: ")
                 if (check_uuid(network_uuid)):
-                    print '>>> delete this network!!'
-                    manager.delete_One_Network(network_uuid)
+                    if (manager.validate_uuid('networks', 'network_id', network_uuid)):
+                        print '>>> delete this network!!'
+                        manager.delete_One_Network(network_uuid)
+                    else:
+                        print '>>> UUID not exists'
 
             elif(choice == '5'):
                 del_all("NETWORK")
